@@ -1,0 +1,541 @@
+-- =========================================
+-- VOCALearn Demo SQL (MySQL 8+)
+-- Tao database + schema theo entity + du lieu demo
+-- =========================================
+
+DROP DATABASE IF EXISTS `vocalearn_demo_db`;
+CREATE DATABASE `vocalearn_demo_db`
+  CHARACTER SET utf8mb4
+  COLLATE utf8mb4_unicode_ci;
+USE `vocalearn_demo_db`;
+
+-- =========================================
+-- 1) TABLE DEFINITIONS
+-- =========================================
+
+CREATE TABLE `user` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `fullName` VARCHAR(100) NOT NULL,
+  `birthday` DATE NULL,
+  `email` VARCHAR(100) NOT NULL UNIQUE,
+  `avatar` VARCHAR(255) NULL,
+  `phoneNumber` VARCHAR(50) NULL,
+  `address` VARCHAR(255) NULL,
+  `accountName` VARCHAR(50) NOT NULL UNIQUE,
+  `passWord` VARCHAR(255) NOT NULL,
+  `createAt` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `isDeleted` TINYINT(1) NOT NULL DEFAULT 0,
+  `role` ENUM('USER','ADMIN') NOT NULL DEFAULT 'USER'
+) ENGINE=InnoDB;
+
+CREATE TABLE `exam_type` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `type` VARCHAR(255) NOT NULL,
+  `isDeleted` TINYINT(1) NOT NULL DEFAULT 0
+) ENGINE=InnoDB;
+
+CREATE TABLE `exam_collection` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `collection` VARCHAR(255) NOT NULL,
+  `isDeleted` TINYINT(1) NOT NULL DEFAULT 0
+) ENGINE=InnoDB;
+
+CREATE TABLE `flashCard_topic` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `title` VARCHAR(255) NOT NULL,
+  `visit_count` INT NOT NULL DEFAULT 0,
+  `createAt` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `userID` INT NOT NULL,
+  `status` ENUM('PRIVATE','PUBLIC') DEFAULT 'PUBLIC',
+  `status_gain` TINYINT(1) NULL,
+  `learning_status` ENUM('MASTERED','IN_PROGRESS','NEW','REVIEW_NEEDED') DEFAULT 'NEW',
+  CONSTRAINT `fk_flashcard_topic_user` FOREIGN KEY (`userID`) REFERENCES `user`(`id`)
+) ENGINE=InnoDB;
+
+CREATE TABLE `flashCard` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `title` VARCHAR(100) NOT NULL,
+  `reviewDate` DATE NULL,
+  `cycle` INT NOT NULL DEFAULT 1,
+  `learningStatus` ENUM('MASTERED','IN_PROGRESS','NEW','REVIEW_NEEDED') NOT NULL DEFAULT 'NEW',
+  `createdAt` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `topicID` INT NOT NULL,
+  CONSTRAINT `fk_flashcard_topic` FOREIGN KEY (`topicID`) REFERENCES `flashCard_topic`(`id`)
+) ENGINE=InnoDB;
+
+CREATE TABLE `card` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `terminology` VARCHAR(255) NOT NULL,
+  `hint` TEXT NOT NULL,
+  `definition` TEXT NULL,
+  `image` VARCHAR(255) NULL,
+  `audio` VARCHAR(255) NULL,
+  `pronounce` VARCHAR(255) NULL,
+  `level` INT DEFAULT 1,
+  `partOfSpeech` VARCHAR(50) NOT NULL,
+  `example` TEXT NULL,
+  `isRemember` INT DEFAULT 0,
+  `createAt` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `flashCardID` INT NOT NULL,
+  CONSTRAINT `fk_card_flashcard` FOREIGN KEY (`flashCardID`) REFERENCES `flashCard`(`id`)
+) ENGINE=InnoDB;
+
+CREATE TABLE `blog_category` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `title` VARCHAR(255) NOT NULL
+) ENGINE=InnoDB;
+
+CREATE TABLE `blog` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `title` VARCHAR(255) NOT NULL,
+  `category_id` INT NOT NULL,
+  `short_detail` TEXT NOT NULL,
+  `image` VARCHAR(255) NULL,
+  `detail` LONGTEXT NOT NULL,
+  `createAt` DATETIME NULL,
+  `author` VARCHAR(255) NULL,
+  CONSTRAINT `fk_blog_category` FOREIGN KEY (`category_id`) REFERENCES `blog_category`(`id`)
+) ENGINE=InnoDB;
+
+CREATE TABLE `exam` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `duration` INT NULL,
+  `title` VARCHAR(100) NOT NULL,
+  `year` INT NULL,
+  `type_id` INT NULL,
+  `collection_id` INT NULL,
+  `attemps` INT NOT NULL DEFAULT 0,
+  `isRandom` TINYINT(1) NOT NULL DEFAULT 0,
+  `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `isDeleted` TINYINT(1) NOT NULL DEFAULT 0,
+  `fileImportName` VARCHAR(255) NULL,
+  CONSTRAINT `fk_exam_type` FOREIGN KEY (`type_id`) REFERENCES `exam_type`(`id`),
+  CONSTRAINT `fk_exam_collection` FOREIGN KEY (`collection_id`) REFERENCES `exam_collection`(`id`)
+) ENGINE=InnoDB;
+
+CREATE TABLE `group_question` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `part` VARCHAR(20) NOT NULL,
+  `title` VARCHAR(255) NULL,
+  `content` TEXT NULL,
+  `is_contribute` TINYINT(1) DEFAULT 0,
+  `bank_group_id` BIGINT NULL,
+  `questionRange` VARCHAR(50) NULL,
+  `exam_id` INT NOT NULL,
+  CONSTRAINT `fk_group_question_exam` FOREIGN KEY (`exam_id`) REFERENCES `exam`(`id`)
+) ENGINE=InnoDB;
+
+CREATE TABLE `group_question_image` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `url` VARCHAR(255) NOT NULL,
+  `group_id` INT NOT NULL,
+  CONSTRAINT `fk_group_image_group` FOREIGN KEY (`group_id`) REFERENCES `group_question`(`id`)
+) ENGINE=InnoDB;
+
+CREATE TABLE `group_question_audio` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `url` VARCHAR(255) NOT NULL,
+  `group_id` INT NOT NULL,
+  CONSTRAINT `fk_group_audio_group` FOREIGN KEY (`group_id`) REFERENCES `group_question`(`id`)
+) ENGINE=InnoDB;
+
+CREATE TABLE `toeicQuestion` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `indexNumber` INT NULL,
+  `part` VARCHAR(50) NULL,
+  `detail` TEXT NULL,
+  `result` VARCHAR(1) NOT NULL,
+  `clarify` TEXT NULL,
+  `audio` VARCHAR(255) NULL,
+  `conversation` VARCHAR(255) NULL,
+  `is_contribute` TINYINT(1) DEFAULT 0,
+  `bank_question_id` INT NULL,
+  `createAt` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `examID` INT NOT NULL,
+  `group_question_id` INT NULL,
+  CONSTRAINT `fk_toeic_exam` FOREIGN KEY (`examID`) REFERENCES `exam`(`id`),
+  CONSTRAINT `fk_toeic_group` FOREIGN KEY (`group_question_id`) REFERENCES `group_question`(`id`)
+) ENGINE=InnoDB;
+
+CREATE TABLE `toeicQuestionImage` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `url` VARCHAR(255) NOT NULL,
+  `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `toeicQuestionID` INT NOT NULL,
+  CONSTRAINT `fk_toeic_image_question` FOREIGN KEY (`toeicQuestionID`) REFERENCES `toeicQuestion`(`id`)
+) ENGINE=InnoDB;
+
+CREATE TABLE `toeicQuestionOption` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `detail` TEXT NOT NULL,
+  `mark` VARCHAR(10) NULL,
+  `createAt` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `toeicQuestionID` INT NOT NULL,
+  CONSTRAINT `fk_toeic_option_question` FOREIGN KEY (`toeicQuestionID`) REFERENCES `toeicQuestion`(`id`)
+) ENGINE=InnoDB;
+
+CREATE TABLE `evaluate` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `userID` INT NOT NULL,
+  `content` TEXT NULL,
+  `star` INT NOT NULL,
+  `image` VARCHAR(255) NULL,
+  `admin_reply` TEXT NULL,
+  `replyAt` DATETIME NULL,
+  `createAt` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT `fk_evaluate_user` FOREIGN KEY (`userID`) REFERENCES `user`(`id`)
+) ENGINE=InnoDB;
+
+CREATE TABLE `comment` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `userID` INT NULL,
+  `examID` INT NOT NULL,
+  `content` TEXT NOT NULL,
+  `createAt` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT `fk_comment_user` FOREIGN KEY (`userID`) REFERENCES `user`(`id`),
+  CONSTRAINT `fk_comment_exam` FOREIGN KEY (`examID`) REFERENCES `exam`(`id`)
+) ENGINE=InnoDB;
+
+CREATE TABLE `comment_replies` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `commentID` INT NOT NULL,
+  `userID` INT NOT NULL,
+  `parentReplyID` INT NULL,
+  `content` TEXT NOT NULL,
+  `createAt` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT `fk_reply_comment` FOREIGN KEY (`commentID`) REFERENCES `comment`(`id`),
+  CONSTRAINT `fk_reply_user` FOREIGN KEY (`userID`) REFERENCES `user`(`id`),
+  CONSTRAINT `fk_reply_parent` FOREIGN KEY (`parentReplyID`) REFERENCES `comment_replies`(`id`)
+) ENGINE=InnoDB;
+
+CREATE TABLE `examReview` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `userID` INT NOT NULL,
+  `examID` INT NOT NULL,
+  `createAt` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `duration` INT NOT NULL,
+  `selectedPart` VARCHAR(255) NOT NULL,
+  `result` INT NOT NULL,
+  `incorrect` INT NULL,
+  CONSTRAINT `fk_examreview_user` FOREIGN KEY (`userID`) REFERENCES `user`(`id`),
+  CONSTRAINT `fk_examreview_exam` FOREIGN KEY (`examID`) REFERENCES `exam`(`id`)
+) ENGINE=InnoDB;
+
+CREATE TABLE `questionReview` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `examReviewID` INT NOT NULL,
+  `toeicQuestionID` INT NOT NULL,
+  `userAnswer` VARCHAR(1) NULL,
+  `createAt` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT `fk_qreview_examreview` FOREIGN KEY (`examReviewID`) REFERENCES `examReview`(`id`),
+  CONSTRAINT `fk_qreview_toeic` FOREIGN KEY (`toeicQuestionID`) REFERENCES `toeicQuestion`(`id`)
+) ENGINE=InnoDB;
+
+CREATE TABLE `custom_exam` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `user_id` INT NOT NULL,
+  `exam_id` INT NOT NULL,
+  CONSTRAINT `fk_custom_exam_user` FOREIGN KEY (`user_id`) REFERENCES `user`(`id`),
+  CONSTRAINT `fk_custom_exam_exam` FOREIGN KEY (`exam_id`) REFERENCES `exam`(`id`)
+) ENGINE=InnoDB;
+
+CREATE TABLE `PaymentTransaction` (
+  `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+  `orderId` VARCHAR(100) NULL,
+  `amount` BIGINT NULL,
+  `currency` VARCHAR(20) NULL,
+  `paymentMethod` VARCHAR(50) NULL,
+  `bankCode` VARCHAR(50) NULL,
+  `transactionCode` VARCHAR(100) NULL,
+  `responseCode` VARCHAR(20) NULL,
+  `transactionStatus` VARCHAR(50) NULL,
+  `description` VARCHAR(255) NULL,
+  `transactionDate` DATETIME NULL,
+  `secureHash` VARCHAR(255) NULL,
+  `user_id` INT NOT NULL,
+  `startDate` DATETIME NULL,
+  `endDate` DATETIME NULL,
+  CONSTRAINT `fk_payment_user` FOREIGN KEY (`user_id`) REFERENCES `user`(`id`)
+) ENGINE=InnoDB;
+
+CREATE TABLE `attemp_log` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `createAt` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `userId` INT NULL,
+  `examId` INT NULL
+) ENGINE=InnoDB;
+
+CREATE TABLE `testResult` (
+  `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+  `userID` INT NOT NULL,
+  `examID` INT NOT NULL,
+  `createAt` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `duration` INT NOT NULL,
+  `listening` FLOAT NULL,
+  `reading` FLOAT NULL,
+  CONSTRAINT `fk_testresult_user` FOREIGN KEY (`userID`) REFERENCES `user`(`id`),
+  CONSTRAINT `fk_testresult_exam` FOREIGN KEY (`examID`) REFERENCES `exam`(`id`)
+) ENGINE=InnoDB;
+
+CREATE TABLE `visit_log` (
+  `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+  `visitedAt` DATETIME DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+CREATE TABLE `password_reset_token` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `email` VARCHAR(255) NOT NULL,
+  `token` VARCHAR(255) NOT NULL,
+  `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `used` TINYINT(1) NOT NULL DEFAULT 0
+) ENGINE=InnoDB;
+
+CREATE TABLE `bank_toeic_question` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `part` VARCHAR(50) NULL,
+  `detail` TEXT NULL,
+  `result` VARCHAR(20) NULL,
+  `audio` VARCHAR(255) NULL,
+  `clarify` VARCHAR(255) NULL,
+  `isPublic` TINYINT(1) DEFAULT 1,
+  `source_toeic_id` INT NOT NULL UNIQUE,
+  `contributor_id` INT NULL,
+  `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT `fk_bank_toeic_contributor` FOREIGN KEY (`contributor_id`) REFERENCES `user`(`id`)
+) ENGINE=InnoDB;
+
+CREATE TABLE `bank_group_question` (
+  `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+  `part` VARCHAR(50) NULL,
+  `content` TEXT NULL,
+  `isPublic` TINYINT(1) DEFAULT 1,
+  `source_group_id` INT NOT NULL UNIQUE,
+  `createdAt` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `contributor_id` INT NULL,
+  CONSTRAINT `fk_bank_group_contributor` FOREIGN KEY (`contributor_id`) REFERENCES `user`(`id`)
+) ENGINE=InnoDB;
+
+CREATE TABLE `bank_group_child_question` (
+  `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+  `indexNumber` INT NULL,
+  `detail` TEXT NULL,
+  `result` VARCHAR(20) NULL,
+  `bank_group_id` BIGINT NULL,
+  `clarify` VARCHAR(255) NULL,
+  CONSTRAINT `fk_bank_child_group` FOREIGN KEY (`bank_group_id`) REFERENCES `bank_group_question`(`id`)
+) ENGINE=InnoDB;
+
+CREATE TABLE `bank_toeic_option` (
+  `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+  `mark` VARCHAR(10) NULL,
+  `detail` TEXT NULL,
+  `bank_question_id` INT NULL,
+  `bank_child_question_id` BIGINT NULL,
+  CONSTRAINT `fk_bank_option_question` FOREIGN KEY (`bank_question_id`) REFERENCES `bank_toeic_question`(`id`),
+  CONSTRAINT `fk_bank_option_child` FOREIGN KEY (`bank_child_question_id`) REFERENCES `bank_group_child_question`(`id`)
+) ENGINE=InnoDB;
+
+CREATE TABLE `bank_image` (
+  `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+  `url` VARCHAR(255) NULL,
+  `bank_question_id` INT NULL,
+  CONSTRAINT `fk_bank_image_question` FOREIGN KEY (`bank_question_id`) REFERENCES `bank_toeic_question`(`id`)
+) ENGINE=InnoDB;
+
+CREATE TABLE `bank_group_image` (
+  `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+  `imageKey` VARCHAR(255) NULL,
+  `bank_group_id` BIGINT NULL,
+  CONSTRAINT `fk_bank_group_image` FOREIGN KEY (`bank_group_id`) REFERENCES `bank_group_question`(`id`)
+) ENGINE=InnoDB;
+
+CREATE TABLE `bank_group_audio` (
+  `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+  `audioKey` VARCHAR(255) NULL,
+  `bank_group_id` BIGINT NULL,
+  CONSTRAINT `fk_bank_group_audio` FOREIGN KEY (`bank_group_id`) REFERENCES `bank_group_question`(`id`)
+) ENGINE=InnoDB;
+
+-- =========================================
+-- 2) DEMO DATA
+-- =========================================
+
+INSERT INTO `user` (`id`, `fullName`, `birthday`, `email`, `avatar`, `phoneNumber`, `address`, `accountName`, `passWord`, `isDeleted`, `role`)
+VALUES
+  (1, 'System Admin', '1995-01-01', 'admin@vocalearn.dev', NULL, '0900000001', 'HCM City', 'admin', 'admin123', 0, 'ADMIN'),
+  (2, 'Nguyen Van A', '2000-05-10', 'usera@vocalearn.dev', NULL, '0900000002', 'Da Nang', 'user_a', 'user123', 0, 'USER'),
+  (3, 'Tran Thi B', '2001-07-20', 'userb@vocalearn.dev', NULL, '0900000003', 'Ha Noi', 'user_b', 'user123', 0, 'USER');
+
+INSERT INTO `exam_type` (`id`, `type`, `isDeleted`) VALUES
+  (1, 'TOEIC Mini Test', 0),
+  (2, 'TOEIC Full Test', 0);
+
+INSERT INTO `exam_collection` (`id`, `collection`, `isDeleted`) VALUES
+  (1, 'ETS 2024', 0),
+  (2, 'Practice Set', 0);
+
+INSERT INTO `blog_category` (`id`, `title`) VALUES
+  (1, 'Vocabulary Tips'),
+  (2, 'Grammar Notes');
+
+INSERT INTO `flashCard_topic` (`id`, `title`, `visit_count`, `userID`, `status`, `status_gain`, `learning_status`)
+VALUES
+  (1, 'Daily Vocabulary', 120, 2, 'PUBLIC', 1, 'IN_PROGRESS'),
+  (2, 'Business English', 45, 3, 'PRIVATE', 0, 'NEW');
+
+INSERT INTO `flashCard` (`id`, `title`, `reviewDate`, `cycle`, `learningStatus`, `topicID`)
+VALUES
+  (1, 'Animals Basic', '2026-03-10', 1, 'IN_PROGRESS', 1),
+  (2, 'Office Terms', '2026-03-12', 2, 'NEW', 2);
+
+INSERT INTO `card` (`id`, `terminology`, `hint`, `definition`, `image`, `audio`, `pronounce`, `level`, `partOfSpeech`, `example`, `isRemember`, `flashCardID`)
+VALUES
+  (1, 'cat', 'a small pet animal', 'meo', NULL, NULL, '/kat/', 1, 'noun', 'The cat is sleeping on the sofa.', 0, 1),
+  (2, 'dog', 'a loyal animal', 'cho', NULL, NULL, '/dog/', 1, 'noun', 'My dog loves running in the park.', 1, 1),
+  (3, 'invoice', 'bill sent to customer', 'hoa don', NULL, NULL, '/invoice/', 1, 'noun', 'Please send the invoice by email.', 0, 2);
+
+INSERT INTO `blog` (`id`, `title`, `category_id`, `short_detail`, `image`, `detail`, `createAt`, `author`)
+VALUES
+  (1, '5 Tips To Remember New Words', 1, 'Meo ghi nho tu vung nhanh hon', NULL, 'Use spaced repetition, examples, and daily review schedule.', NOW(), 'System Admin'),
+  (2, 'Present Perfect In 10 Minutes', 2, 'Tom tat nhanh thi hien tai hoan thanh', NULL, 'Structure: have/has + V3. Use for experiences and unfinished time.', NOW(), 'System Admin');
+
+INSERT INTO `exam` (`id`, `duration`, `title`, `year`, `type_id`, `collection_id`, `attemps`, `isRandom`, `isDeleted`, `fileImportName`)
+VALUES
+  (1, 30, 'TOEIC Mini 001', 2025, 1, 1, 100, 0, 0, 'mini_001.xlsx'),
+  (2, 20, 'Custom Quick Test', 2026, 1, 2, 12, 1, 0, NULL);
+
+INSERT INTO `group_question` (`id`, `part`, `title`, `content`, `is_contribute`, `bank_group_id`, `questionRange`, `exam_id`)
+VALUES
+  (1, '3', 'Office Conversation', 'Listen to a conversation between two coworkers.', 0, NULL, '3-4', 1);
+
+INSERT INTO `group_question_image` (`id`, `url`, `group_id`) VALUES
+  (1, 'group-images/office-conversation-1.png', 1);
+
+INSERT INTO `group_question_audio` (`id`, `url`, `group_id`) VALUES
+  (1, 'group-audios/office-conversation-1.mp3', 1);
+
+INSERT INTO `toeicQuestion` (`id`, `indexNumber`, `part`, `detail`, `result`, `clarify`, `audio`, `conversation`, `is_contribute`, `bank_question_id`, `examID`, `group_question_id`)
+VALUES
+  (1, 1, '1', 'Look at the picture and choose the best description.', 'A', 'Option A best matches the picture.', NULL, NULL, 0, NULL, 1, NULL),
+  (2, 2, '5', 'Choose the best word to complete the sentence.', 'B', 'Present perfect is required by context.', NULL, NULL, 0, NULL, 1, NULL),
+  (3, 3, '3', 'What does the woman suggest?', 'C', 'She suggests moving the meeting.', 'audios/q3.mp3', 'Conversation about meeting schedule', 0, NULL, 1, 1),
+  (4, 4, '3', 'When will they finish the report?', 'D', 'They plan to finish by Friday.', 'audios/q4.mp3', 'Conversation about report deadline', 0, NULL, 1, 1),
+  (5, 1, '2', 'Where is the announcement heard?', 'A', 'At an airport gate.', NULL, NULL, 0, NULL, 2, NULL);
+
+INSERT INTO `toeicQuestionImage` (`id`, `url`, `toeicQuestionID`)
+VALUES
+  (1, 'toeic-images/question-1.png', 1);
+
+INSERT INTO `toeicQuestionOption` (`id`, `detail`, `mark`, `toeicQuestionID`) VALUES
+  (1, 'A man is opening a window.', 'A', 1),
+  (2, 'A man is painting a wall.', 'B', 1),
+  (3, 'A man is driving a truck.', 'C', 1),
+  (4, 'A man is reading a menu.', 'D', 1),
+  (5, 'has finished', 'A', 2),
+  (6, 'have finished', 'B', 2),
+  (7, 'finished', 'C', 2),
+  (8, 'finishing', 'D', 2),
+  (9, 'Cancel the meeting', 'A', 3),
+  (10, 'Delay the budget plan', 'B', 3),
+  (11, 'Move the meeting to tomorrow', 'C', 3),
+  (12, 'Call the client first', 'D', 3),
+  (13, 'Today', 'A', 4),
+  (14, 'Tomorrow', 'B', 4),
+  (15, 'Thursday', 'C', 4),
+  (16, 'Friday', 'D', 4),
+  (17, 'At a train station', 'A', 5),
+  (18, 'At an airport gate', 'B', 5),
+  (19, 'At a restaurant', 'C', 5),
+  (20, 'At a hotel lobby', 'D', 5);
+
+INSERT INTO `evaluate` (`id`, `userID`, `content`, `star`, `image`, `admin_reply`, `replyAt`)
+VALUES
+  (1, 2, 'Ung dung de dung, luyen tu vung rat tien.', 5, NULL, 'Cam on ban da phan hoi!', NOW()),
+  (2, 3, 'De thi kha sat thuc te.', 4, NULL, NULL, NULL);
+
+INSERT INTO `comment` (`id`, `userID`, `examID`, `content`)
+VALUES
+  (1, 2, 1, 'Bai nay phan nghe kha kho o cau 3-4.');
+
+INSERT INTO `comment_replies` (`id`, `commentID`, `userID`, `parentReplyID`, `content`)
+VALUES
+  (1, 1, 1, NULL, 'Ban nghe key word o cuoi cau se de hon.'),
+  (2, 1, 3, 1, 'Minh thu lai va da lam dung, cam on admin.');
+
+INSERT INTO `examReview` (`id`, `userID`, `examID`, `duration`, `selectedPart`, `result`, `incorrect`)
+VALUES
+  (1, 2, 1, 1680, '1,3,5', 3, 1);
+
+INSERT INTO `questionReview` (`id`, `examReviewID`, `toeicQuestionID`, `userAnswer`)
+VALUES
+  (1, 1, 1, 'A'),
+  (2, 1, 2, 'C');
+
+INSERT INTO `custom_exam` (`id`, `user_id`, `exam_id`)
+VALUES
+  (1, 2, 2);
+
+INSERT INTO `PaymentTransaction`
+(`id`, `orderId`, `amount`, `currency`, `paymentMethod`, `bankCode`, `transactionCode`, `responseCode`, `transactionStatus`, `description`, `transactionDate`, `secureHash`, `user_id`, `startDate`, `endDate`)
+VALUES
+  (1, 'DEMO-ORDER-0001', 199000, 'VND', 'VNPAY', 'NCB', 'TXN0001', '00', 'SUCCESS', 'Goi Premium 1 thang', NOW(), 'demo_hash', 2, NOW(), DATE_ADD(NOW(), INTERVAL 30 DAY));
+
+INSERT INTO `attemp_log` (`id`, `userId`, `examId`, `createAt`) VALUES
+  (1, 2, 1, NOW()),
+  (2, 3, 1, NOW()),
+  (3, 2, 2, NOW());
+
+INSERT INTO `testResult` (`id`, `userID`, `examID`, `duration`, `listening`, `reading`, `createAt`)
+VALUES
+  (1, 2, 1, 1680, 320.0, 280.0, NOW());
+
+INSERT INTO `visit_log` (`id`, `visitedAt`) VALUES
+  (1, NOW()),
+  (2, NOW());
+
+INSERT INTO `password_reset_token` (`id`, `email`, `token`, `used`, `createdAt`)
+VALUES
+  (1, 'usera@vocalearn.dev', '123456', 0, NOW());
+
+INSERT INTO `bank_toeic_question` (`id`, `part`, `detail`, `result`, `audio`, `clarify`, `isPublic`, `source_toeic_id`, `contributor_id`, `createdAt`)
+VALUES
+  (1, '1', 'Look at the picture and choose the best description.', 'A', NULL, 'Best answer is A.', 1, 1, 2, NOW());
+
+INSERT INTO `bank_group_question` (`id`, `part`, `content`, `isPublic`, `source_group_id`, `createdAt`, `contributor_id`)
+VALUES
+  (1, '3', 'Listen to a conversation between two coworkers.', 1, 1, NOW(), 3);
+
+INSERT INTO `bank_group_child_question` (`id`, `indexNumber`, `detail`, `result`, `bank_group_id`, `clarify`)
+VALUES
+  (1, 3, 'What does the woman suggest?', 'C', 1, 'She suggests moving the meeting.'),
+  (2, 4, 'When will they finish the report?', 'D', 1, 'By Friday.');
+
+INSERT INTO `bank_toeic_option` (`id`, `mark`, `detail`, `bank_question_id`, `bank_child_question_id`) VALUES
+  (1, 'A', 'A man is opening a window.', 1, NULL),
+  (2, 'B', 'A man is painting a wall.', 1, NULL),
+  (3, 'C', 'A man is driving a truck.', 1, NULL),
+  (4, 'D', 'A man is reading a menu.', 1, NULL),
+  (5, 'A', 'Cancel the meeting', NULL, 1),
+  (6, 'B', 'Delay the budget plan', NULL, 1),
+  (7, 'C', 'Move the meeting to tomorrow', NULL, 1),
+  (8, 'D', 'Call the client first', NULL, 1),
+  (9, 'A', 'Today', NULL, 2),
+  (10, 'B', 'Tomorrow', NULL, 2),
+  (11, 'C', 'Thursday', NULL, 2),
+  (12, 'D', 'Friday', NULL, 2);
+
+INSERT INTO `bank_image` (`id`, `url`, `bank_question_id`)
+VALUES
+  (1, 'bank-images/toeic-q1.png', 1);
+
+INSERT INTO `bank_group_image` (`id`, `imageKey`, `bank_group_id`)
+VALUES
+  (1, 'bank-group-images/group-1.png', 1);
+
+INSERT INTO `bank_group_audio` (`id`, `audioKey`, `bank_group_id`)
+VALUES
+  (1, 'bank-group-audios/group-1.mp3', 1);
+
+-- =========================================
+-- End of script
+-- =========================================

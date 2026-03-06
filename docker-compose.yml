@@ -1,0 +1,118 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8
+    container_name: mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: 1803105913
+      MYSQL_DATABASE: vocalearndtb
+    ports:
+      - "3307:3306"
+    volumes:
+      # compose đặt ở FlashCard/FlashCard -> lùi 2 cấp về project root
+      - ../../mysql_data:/var/lib/mysql
+    networks:
+      - vocalearn_net
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+        reservations:
+          memory: 512m
+
+  redis:
+    image: redis:7
+    container_name: redis
+    restart: always
+    ports:
+      - "6379:6379"
+    networks:
+      - vocalearn_net
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+        reservations:
+          memory: 256m
+
+  minio:
+    image: minio/minio:latest
+    container_name: minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: admin
+      MINIO_ROOT_PASSWORD: admin123
+    volumes:
+      # lùi 2 cấp về project root
+      - ../../minio_data:/data
+    command: server /data --console-address ":9001"
+    restart: always
+    networks:
+      - vocalearn_net
+
+  backend:
+    # vì compose nằm cùng cấp pom.xml & Dockerfile → build ngay tại thư mục hiện tại
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: backend
+    restart: always
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mysql
+      - redis
+      - minio
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/vocalearndtb?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: 1803105913
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_PUBLIC_ENDPOINT: http://localhost:9000
+      MINIO_ACCESS_KEY: admin
+      MINIO_SECRET_KEY: admin123
+      MINIO_BUCKET: vocalearn
+      VNPAY_TMN_CODE: E4YNWZ27
+      VNPAY_HASH_SECRET: ZZYOA0ILG1NO4TPXPPH48S9CA832CKS3
+      VNPAY_URL: https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
+      VNPAY_RETURN_URL: https://unstartling-suellen-unstacked.ngrok-free.dev/api/payment/vnpay-return
+      VNPAY_IPN: https://unstartling-suellen-unstacked.ngrok-free.dev/api/payment/vnpay-ipn
+    networks:
+      - vocalearn_net
+    deploy:
+      resources:
+        limits:
+          memory: 2g
+        reservations:
+          memory: 1g
+
+  frontend:
+    # Trước ở project root bạn đặt ../../Githup/english_vocabulary_system
+    # Nay compose nằm sâu thêm 2 cấp → lùi 4 cấp
+    build:
+      context: ../../../english_vocabulary_system
+      dockerfile: Dockerfile
+    container_name: frontend
+    restart: always
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    networks:
+      - vocalearn_net
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+        reservations:
+          memory: 512m
+
+networks:
+  vocalearn_net:
+    driver: bridge
