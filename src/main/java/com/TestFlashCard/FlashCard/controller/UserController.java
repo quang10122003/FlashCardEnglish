@@ -24,7 +24,6 @@ import com.TestFlashCard.FlashCard.response.LoginResponse;
 import com.TestFlashCard.FlashCard.response.UserResponse;
 import com.TestFlashCard.FlashCard.response.renewalTokenResponse;
 import com.TestFlashCard.FlashCard.security.JwtTokenProvider;
-import com.TestFlashCard.FlashCard.service.DigitalOceanStorageService;
 import com.TestFlashCard.FlashCard.service.EmailService;
 import com.TestFlashCard.FlashCard.service.MediaService;
 import com.TestFlashCard.FlashCard.service.MinIO_MediaService;
@@ -82,8 +81,6 @@ public class UserController {
      @Autowired
      private ObjectMapper objectMapper;
 
-     @Autowired
-     private final DigitalOceanStorageService storageService;
      @Autowired
      private MinIO_MediaService minIO_MediaService;
 
@@ -310,7 +307,7 @@ public class UserController {
 
           if (avatar != null) {
                if (user.getAvatar() != null)
-                    storageService.deleteImage(user.getAvatar());
+                    minIO_MediaService.deleteFile(user.getAvatar());
                user.setAvatar(mediaService.getImageUrl(avatar));
           }
           userService.updateUser(user);

@@ -72,7 +72,6 @@ public class securityConfig {
                 )
                 .addFilterBefore(jwtTokenFilter, UsernamePasswordAuthenticationFilter.class);
         
-        System.out.println("---------hahahahha---------");
         return http.build();
     }
 

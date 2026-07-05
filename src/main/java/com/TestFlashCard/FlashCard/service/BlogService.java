@@ -35,7 +35,6 @@ public class BlogService {
     // @Autowired
     // private final MediaService mediaService;
     // @Autowired
-    // private final DigitalOceanStorageService storageService;
 
     @Transactional
     public void createCategory(BlogCategoryCreateRequest request) throws IOException {

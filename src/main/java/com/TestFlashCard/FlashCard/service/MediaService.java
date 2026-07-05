@@ -20,7 +20,7 @@ import lombok.RequiredArgsConstructor;
 public class MediaService {
 
     @Autowired
-    private final DigitalOceanStorageService storageService;
+    private final MinIO_MediaService minioMediaService;
 
     public String getImageUrl(MultipartFile image) throws IOException {
 
@@ -57,8 +57,7 @@ public class MediaService {
                 throw new InvalidImageException("Invalid image's content type: " + contentType);
             }
 
-            imageFileUrl = storageService.uploadImage(image.getOriginalFilename(), image.getInputStream(),
-                    image.getContentType());
+            imageFileUrl = minioMediaService.uploadFile(image);
         }
         return imageFileUrl;
     }
@@ -80,7 +79,27 @@ public class MediaService {
         }
 
         try (InputStream is = new FileInputStream(imageFile)) {
-            return storageService.uploadImage(imageFile.getName(), is, contentType);
+            final File imageFileCopy = imageFile;
+            final String contentTypeCopy = contentType;
+            MultipartFile multipartFile = new org.springframework.web.multipart.MultipartFile() {
+                @Override
+                public String getName() { return imageFileCopy.getName(); }
+                @Override
+                public String getOriginalFilename() { return imageFileCopy.getName(); }
+                @Override
+                public String getContentType() { return contentTypeCopy; }
+                @Override
+                public boolean isEmpty() { return imageFileCopy.length() == 0; }
+                @Override
+                public long getSize() { return imageFileCopy.length(); }
+                @Override
+                public byte[] getBytes() throws IOException { return java.nio.file.Files.readAllBytes(imageFileCopy.toPath()); }
+                @Override
+                public java.io.InputStream getInputStream() throws IOException { return new java.io.FileInputStream(imageFileCopy); }
+                @Override
+                public void transferTo(java.io.File dest) throws IOException, IllegalStateException { java.nio.file.Files.copy(imageFileCopy.toPath(), dest.toPath()); }
+            };
+            return minioMediaService.uploadFile(multipartFile);
         }
     }
 
@@ -133,7 +152,7 @@ public class MediaService {
             throw new IllegalArgumentException("Invalid audio content type: " + contentType);
         }
 
-        return storageService.uploadAudio(audioFile.getOriginalFilename(), audioFile.getInputStream(), contentType);
+        return minioMediaService.uploadFile(audioFile);
     }
 
     public String getAudioUrl(File audioFile) throws IOException {
@@ -153,7 +172,27 @@ public class MediaService {
         }
 
         try (InputStream is = new FileInputStream(audioFile)) {
-            return storageService.uploadAudio(audioFile.getName(), is, contentType);
+            final File audioFileCopy = audioFile;
+            final String contentTypeCopy = contentType;
+            MultipartFile multipartFile = new org.springframework.web.multipart.MultipartFile() {
+                @Override
+                public String getName() { return audioFileCopy.getName(); }
+                @Override
+                public String getOriginalFilename() { return audioFileCopy.getName(); }
+                @Override
+                public String getContentType() { return contentTypeCopy; }
+                @Override
+                public boolean isEmpty() { return audioFileCopy.length() == 0; }
+                @Override
+                public long getSize() { return audioFileCopy.length(); }
+                @Override
+                public byte[] getBytes() throws IOException { return java.nio.file.Files.readAllBytes(audioFileCopy.toPath()); }
+                @Override
+                public java.io.InputStream getInputStream() throws IOException { return new java.io.FileInputStream(audioFileCopy); }
+                @Override
+                public void transferTo(java.io.File dest) throws IOException, IllegalStateException { java.nio.file.Files.copy(audioFileCopy.toPath(), dest.toPath()); }
+            };
+            return minioMediaService.uploadFile(multipartFile);
         }
     }
 

@@ -56,6 +56,7 @@ public class MinIO_MediaService {
         String contentType = file.getContentType();
         String fileExtension = getFileExtension(file.getOriginalFilename());
         contentType = normalizeContentType(contentType, fileExtension);
+        String folder = resolveStorageFolder(contentType);
 
         // Cho phép image *hoặc* audio
         if (contentType == null ||
@@ -64,14 +65,15 @@ public class MinIO_MediaService {
         }
 
         String uniqueFileName = generateUniqueFileName(file.getOriginalFilename());
+        String objectKey = folder + "/" + uniqueFileName;
 
         System.out.println("Uploading to bucket: " + minIOProperties.getBucket());
-        System.out.println("Key: " + uniqueFileName);
+        System.out.println("Key: " + objectKey);
         System.out.println("Content-Type: " + contentType);
 
         PutObjectRequest request = PutObjectRequest.builder()
                 .bucket(minIOProperties.getBucket())
-                .key(uniqueFileName)
+                .key(objectKey)
                 .contentType(contentType)
                 .build();
 
@@ -89,7 +91,7 @@ public class MinIO_MediaService {
         }
 
         // Lưu **key** vào DB; khi trả về FE hãy presign bằng getPresignedURL(...)
-        return uniqueFileName;
+        return objectKey;
     }
 
     public String uploadFile(File imageFile) throws IOException {
@@ -109,10 +111,12 @@ public class MinIO_MediaService {
         }
 
         String uniqueFileName = generateUniqueFileName(originalFilename);
+        String folder = resolveStorageFolder(contentType);
+        String objectKey = folder + "/" + uniqueFileName;
 
         PutObjectRequest req = PutObjectRequest.builder()
                 .bucket(minIOProperties.getBucket())
-                .key(uniqueFileName)
+                .key(objectKey)
                 .contentType(contentType)
                 .build();
 
@@ -128,7 +132,20 @@ public class MinIO_MediaService {
             throw e;
         }
 
-        return uniqueFileName;
+        return objectKey;
+    }
+
+    private String resolveStorageFolder(String contentType) {
+        if (contentType == null) {
+            return "media";
+        }
+        if (contentType.startsWith("image/")) {
+            return "images";
+        }
+        if (contentType.startsWith("audio/")) {
+            return "audios";
+        }
+        return "media";
     }
 
     private String normalizeContentType(String contentType, String extension) {
@@ -254,17 +271,31 @@ public class MinIO_MediaService {
 
         String copySource = minIOProperties.getBucket() + "/" + sourceKey;
         String destinationFileName = generateUniqueFileName(sourceKey);
+        String destinationKey = resolveStorageFolderFromKey(sourceKey) + "/" + destinationFileName;
 
         CopyObjectRequest request = CopyObjectRequest.builder()
                 .copySource(copySource)
                 .destinationBucket(minIOProperties.getBucket())
-                .destinationKey(destinationFileName)
+                .destinationKey(destinationKey)
                 .build();
 
         s3Client.copyObject(request);
 
-        return destinationFileName; // trả về key mới
+        return destinationKey; // trả về key mới
     }
+    private String resolveStorageFolderFromKey(String key) {
+        if (key == null || key.isBlank()) {
+            return "media";
+        }
+        if (key.startsWith("images/")) {
+            return "images";
+        }
+        if (key.startsWith("audios/")) {
+            return "audios";
+        }
+        return "media";
+    }
+
     private String getFileExtension(String fileName) {
         if (fileName == null) return null;
         int lastDotIndex = fileName.lastIndexOf('.');

@@ -48,8 +48,6 @@ public class FlashCardService {
     public final IUser_Repository user_Repository;
     @Autowired
     private final CardService cardService;
-    @Autowired
-    private final DigitalOceanStorageService storageService;
 
     public List<ListFlashCardTopicResponse> getFlashCardTopicsByUser(int userID) {
         if (!user_Repository.existsById(userID))

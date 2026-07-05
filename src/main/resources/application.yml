@@ -1,13 +1,15 @@
 spring:
+  config:
+    import: optional:file:.env[.properties]
   application:
     name: FlashCard
   mvc:
     problemdetails:
       enabled: true
   datasource:
-    url: "jdbc:mysql://localhost:3306/vocalearn_demo_db"
-    username: root
-    password: ""
+    url: "${DB_URL:jdbc:mysql://localhost:3306/vocalearn_demo_db}"
+    username: "${DB_USERNAME:root}"
+    password: "${DB_PASSWORD:}"
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
@@ -30,8 +32,8 @@ spring:
   mail:
     host: smtp.gmail.com
     port: 587
-    username: qdao10122003badao@gmail.com
-    password: ""
+    username: "${MAIL_USERNAME:abc@gmail.com}"
+    password: "${MAIL_PASSWORD:}"
     properties:
       mail:
         smtp:
@@ -40,8 +42,8 @@ spring:
             enable: true
   data:
     redis:
-      host: redis
-      port: 6379
+      host: "${REDIS_HOST:localhost}"
+      port: "${REDIS_PORT:6379}"
       timeout: 60000
   cache:
     type: redis
@@ -51,31 +53,24 @@ server:
   port: 8080
 
 jwt:
-  secret: Y2FyZW1hbGxvd2lzYXZlcnljb21wbGV4c2VjcmV0a2V5dGhhdGlzdmVyeWhhcmR0b2d1ZXNz
+  secret: "${JWT_SECRET:Y2FyZW1hbGxvd2lzYXZlcnljb21wbGV4c2VjcmV0a2V5dGhhdGlzdmVyeWhhcmR0b2d1Zzzz}"
   accessTokenExpiration: 86400000
   renewalTokenExpiration: 604800000
 
-digitalocean:
-  space:
-    endpoint: https://flashcard-space.sgp1.digitaloceanspaces.com
-    access-key: DO009DMV2WZMZFCLY7NZ
-    secret-key: k85ynp9BF5UBH/F2H8/wNIA9qfECDq2y3rJkrAJxED4
-    name: flashcard-space
-    region: sgp1
-
 minio:
-  endpoint: http://minio:9000
-  public-endpoint: http://localhost:9000
-  access-key: "${MINIO_ACCESS_KEY:123}"
-  secret-key: "${MINIO_SECRET_KEY:123}"
-  bucket: "${MINIO_BUCKET:haha}"
+  endpoint: "${MINIO_ENDPOINT:http://localhost:9000}"
+  public-endpoint: "${MINIO_PUBLIC_ENDPOINT:http://localhost:9000}"
+  access-key: "${MINIO_ACCESS_KEY:admin}"
+  secret-key: "${MINIO_SECRET_KEY:admin123}"
+  bucket: "${MINIO_BUCKET:vocalearn}"
+  default-folder: "media"
 
 vnpay:
-  tmnCode: "${VNPAY_TMN_CODE:xxx}"
-  hashSecret: "${VNPAY_HASH_SECRET:xx}"
-  url: "${VNPAY_URL:xx}"
-  returnUrl: "${VNPAY_RETURN_URL:xx}"
-  ipn: "${VNPAY_IPN:https://nontenurially-reemergent-gabriel.ngrok-free.dev/api/payment/vnpay-ipn}"
+  tmnCode: "${VNPAY_TMN_CODE:accd}"
+  hashSecret: "${VNPAY_HASH_SECRET:aaaa}"
+  url: "${VNPAY_URL:https://sandbox.vnpayment.vn/paymentv2/vpcpay.html}"
+  returnUrl: "${VNPAY_RETURN_URL:https://unstartling-suellen-unstacked.ngrok-free.dev/api/payment/vnpay-return}"
+  ipn: "${VNPAY_IPN:https://unstartling-suellen-unstacked.ngrok-free.dev/api/payment/vnpay-ipn}"
 
 logging:
   level:

@@ -40,7 +40,6 @@ public class CardService {
     private final ICard_Repository card_Repository;
 
     // @Autowired
-    // private final DigitalOceanStorageService storageService;
 
     @Autowired
     private final IFlashCard_Repository flashCard_Repository;

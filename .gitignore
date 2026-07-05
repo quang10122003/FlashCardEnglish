@@ -1,0 +1,6 @@
+.env
+.env.*
+!.env.example
+
+# Build output
+/target/
