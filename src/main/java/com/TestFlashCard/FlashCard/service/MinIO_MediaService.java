@@ -169,8 +169,11 @@ public class MinIO_MediaService {
     }
 
     // Presign URL dùng publicPresigner (đã ký với public-endpoint)
-    @Cacheable(value = "presignedUrls", key = "#key")   // ✅ sửa #fileName -> #key
+    @Cacheable(value = "presignedUrls", key = "#key", condition = "#key != null && !#key.isBlank()")
     public String getPresignedURL(String key, Duration expiry) {
+        if (key == null || key.isBlank()) {
+            return null;
+        }
         expiry = Duration.ofDays(1);
         var get = GetObjectRequest.builder()
                 .bucket(minIOProperties.getBucket())

@@ -362,9 +362,9 @@ CREATE TABLE `bank_group_audio` (
 
 INSERT INTO `user` (`id`, `fullName`, `birthday`, `email`, `avatar`, `phoneNumber`, `address`, `accountName`, `passWord`, `isDeleted`, `role`)
 VALUES
-  (1, 'System Admin', '1995-01-01', 'admin@vocalearn.dev', NULL, '0900000001', 'HCM City', 'admin', 'admin123', 0, 'ADMIN'),
-  (2, 'Nguyen Van A', '2000-05-10', 'usera@vocalearn.dev', NULL, '0900000002', 'Da Nang', 'user_a', 'user123', 0, 'USER'),
-  (3, 'Tran Thi B', '2001-07-20', 'userb@vocalearn.dev', NULL, '0900000003', 'Ha Noi', 'user_b', 'user123', 0, 'USER');
+  (1, 'System Admin', '1995-01-01', 'admin@vocalearn.dev', NULL, '0900000001', 'HCM City', 'admin', '$2b$12$W0xKwjNOIScx8sRnn9iJ9e5bjQQGokRxgiCGMzAIgWPp0e71iEfqu', 0, 'ADMIN'),
+  (2, 'Nguyen Van A', '2000-05-10', 'usera@vocalearn.dev', NULL, '0900000002', 'Da Nang', 'user_a', '$2b$12$W0xKwjNOIScx8sRnn9iJ9e5bjQQGokRxgiCGMzAIgWPp0e71iEfqu', 0, 'USER'),
+  (3, 'Tran Thi B', '2001-07-20', 'userb@vocalearn.dev', NULL, '0900000003', 'Ha Noi', 'user_b', '$2b$12$W0xKwjNOIScx8sRnn9iJ9e5bjQQGokRxgiCGMzAIgWPp0e71iEfqu', 0, 'USER');
 
 INSERT INTO `exam_type` (`id`, `type`, `isDeleted`) VALUES
   (1, 'TOEIC Mini Test', 0),
